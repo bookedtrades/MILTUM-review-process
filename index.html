@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review Generation Process · Miltum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:dark;
+  --orange:#FE6C26;
+  --bg:#0D0C0B;
+  --surface:#171513;
+  --line:#2B2724;
+  --text:#F4F1ED;
+  --muted:#A39C95;
+  --faint:#736C66;
+  --bubble:#252220;
+  --bubble-text:#F7F4F0;
+  --tok-bg:rgba(254,108,38,.17);
+  --tok-text:#FF9A66;
+  --btn-bg:#F4F1ED;
+  --btn-text:#0D0C0B;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+.wrap{max-width:960px;margin:0 auto;padding:0 16px}
+@media(min-width:720px){.wrap{padding:0 32px}}
+.cond{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+
+/* Header */
+.top{border-bottom:1px solid var(--line)}
+.top-in{display:flex;align-items:center;height:76px}
+.logo{display:block;height:40px;width:auto}
+
+/* Hero */
+.hero{padding-top:56px;padding-bottom:12px}
+.eyebrow{color:var(--orange);font-size:14px}
+h1{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(64px,13vw,124px);line-height:.88;letter-spacing:.01em;margin:16px 0 22px}
+h1 span{color:var(--orange)}
+.lede{max-width:600px;color:var(--muted);font-size:17px}
+
+/* Review link card */
+.linkcard{margin-top:32px;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--orange);border-radius:14px;padding:20px 22px;display:grid;gap:12px}
+.linkcard .lbl{font-size:13px;color:var(--orange)}
+.linkrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.url{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:17px;color:var(--text);overflow-wrap:anywhere;flex:1 1 300px}
+.btns{display:flex;gap:8px}
+.ghost{font-size:13px;letter-spacing:.09em;font-weight:700;padding:8px 14px;border-radius:8px;border:1px solid var(--line);color:var(--muted);text-decoration:none;display:inline-flex;align-items:center}
+.ghost:hover{color:var(--text);border-color:var(--faint)}
+.linkcard p{color:var(--muted);font-size:14px}
+
+/* Flow strip */
+.flow{list-style:none;display:grid;grid-template-columns:repeat(5,1fr);margin-top:44px;position:relative}
+.flow::before{content:"";position:absolute;top:15px;left:10%;right:10%;height:2px;background:var(--line)}
+.flow li{position:relative;display:grid;justify-items:center;text-align:center;gap:4px;padding:0 6px}
+.flow .dot{width:32px;height:32px;border-radius:50%;background:var(--bg);border:2px solid var(--orange);color:var(--orange);display:grid;place-items:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;margin-bottom:6px;position:relative}
+.flow li:first-child .dot,.flow li:last-child .dot{background:var(--orange);color:#0D0C0B}
+.flow b{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.06em;font-weight:700;font-size:15px}
+.flow small{color:var(--muted);font-size:13px;line-height:1.3}
+
+/* Rules */
+.rules{margin-top:48px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 22px 24px}
+.rules h2{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:32px;letter-spacing:.02em;line-height:1}
+.rules ol{list-style:none;counter-reset:r;margin-top:16px;display:grid;gap:10px}
+.rules li{counter-increment:r;display:grid;grid-template-columns:30px 1fr;gap:6px;color:var(--muted)}
+.rules li::before{content:counter(r,decimal-leading-zero);font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--orange);font-size:15px;padding-top:2px}
+.rules li b{color:var(--text);font-weight:500}
+
+/* Groups */
+.group{margin-top:64px}
+.group-head{display:flex;align-items:baseline;gap:14px;border-bottom:1px solid var(--line);padding-bottom:12px}
+.gnum{color:var(--orange);font-size:15px;font-weight:700}
+.group-head h2{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:44px;letter-spacing:.02em;line-height:.95}
+.group-sub{color:var(--muted);margin-top:12px;max-width:640px}
+
+/* Items */
+.item{display:grid;grid-template-columns:96px 1fr;gap:20px;padding:26px 0;border-bottom:1px solid var(--line)}
+.rail .num{font-family:'Bebas Neue',sans-serif;font-size:52px;line-height:.85;color:var(--orange)}
+.rail .time{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.35}
+.rail .time span{display:block}
+.card-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
+.card h3{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:30px;letter-spacing:.02em;line-height:1}
+.tag{font-size:12px;letter-spacing:.09em;padding:3px 8px 2px;border-radius:4px;border:1px solid color-mix(in srgb,var(--orange) 50%,transparent);color:var(--orange)}
+.tag.plain{border-color:var(--line);color:var(--muted)}
+.when{color:var(--muted);margin-top:8px;font-size:15px;max-width:620px}
+.when b{color:var(--text);font-weight:500}
+.checks{list-style:none;margin-top:16px;display:grid;gap:8px;max-width:620px}
+.checks li{display:grid;grid-template-columns:24px 1fr;gap:8px;color:var(--text)}
+.checks li::before{content:"\2713";color:var(--orange);font-weight:700}
+.gtag{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88em;border:1px solid var(--line);color:var(--text);border-radius:4px;padding:1px 6px}
+.checks code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88em;border:1px solid var(--line);color:var(--text);border-radius:4px;padding:1px 6px}
+.msg{margin-top:18px;max-width:620px}
+.msg + .msg{margin-top:24px}
+.msg-label{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;font-size:14px;margin-bottom:8px;color:var(--text)}
+.msg-label .sub{color:var(--muted);font-size:13px}
+.msg-label .opt{color:var(--orange);font-size:12px;border:1px solid color-mix(in srgb,var(--orange) 45%,transparent);border-radius:4px;padding:1px 6px 0}
+.bubble{background:var(--bubble);color:var(--bubble-text);border-radius:20px 20px 20px 6px;padding:14px 18px;font-size:16px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+.bubble.mail{border-radius:12px}
+.bubble.subject{border-radius:12px;font-weight:500}
+.tok{background:var(--tok-bg);color:var(--tok-text);border-radius:4px;padding:1px 5px;font-weight:500;white-space:nowrap}
+.lnk{color:var(--tok-text);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--orange) 50%,transparent);text-underline-offset:3px}
+.msg-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px}
+.count{font-size:13px;color:var(--faint);font-weight:500}
+.count b{color:var(--muted);font-weight:600}
+.copy{font-size:13px;letter-spacing:.09em;font-weight:700;padding:8px 16px;border-radius:8px;background:var(--btn-bg);color:var(--btn-text);transition:background .15s,color .15s;min-width:92px}
+.copy:hover,.copy.done{background:var(--orange);color:#0D0C0B}
+
+/* Callouts */
+.stop{display:flex;gap:16px;align-items:center;margin-top:26px;background:var(--orange);color:#0D0C0B;border-radius:14px;padding:18px 22px}
+.stop .big{font-family:'Bebas Neue',sans-serif;font-size:40px;line-height:.9;flex:none}
+.stop p{font-weight:500}
+.note{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:16px 18px;color:var(--muted);margin-top:26px;font-size:15px;max-width:720px}
+.note b{color:var(--text);font-weight:500}
+
+@media(max-width:620px){
+  .top-in{height:64px}
+  .logo{height:32px}
+  .flow{grid-template-columns:1fr;gap:14px;margin-top:36px}
+  .flow::before{top:16px;bottom:16px;left:15px;right:auto;width:2px;height:auto}
+  .flow li{grid-template-columns:32px auto 1fr;justify-items:start;text-align:left;align-items:center;gap:0 12px;padding:0}
+  .flow .dot{margin-bottom:0}
+  .item{grid-template-columns:1fr;gap:12px;padding:22px 0}
+  .rail{display:flex;align-items:baseline;gap:12px}
+  .rail .num{font-size:38px}
+  .rail .time{margin-top:0}
+  .rail .time span{display:inline}
+  .rail .time span + span::before{content:" \00B7 "}
+  .card h3{font-size:27px}
+  .group-head h2{font-size:38px}
+  .stop{flex-direction:column;align-items:flex-start;gap:6px}
+}
+
+/* Footer */
+.foot{margin-top:80px;border-top:1px solid var(--line);padding-top:44px;padding-bottom:60px}
+.foot-big{font-family:'Bebas Neue',sans-serif;font-size:clamp(38px,7vw,60px);line-height:.95;letter-spacing:.01em}
+.foot-big span{color:var(--orange)}
+.foot-meta{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:18px;font-size:14px;color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-in">
+    <img class="logo" src="data:image/png;base64,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" alt="Booked Trades" width="960" height="182">
+  </div>
+</header>
+
+<section class="wrap hero">
+  <div class="eyebrow cond">Miltum · Review Generation Process</div>
+  <h1>Finish the job.<br><span>Get the review.</span></h1>
+  <p class="lede">How we turn every finished job into a review. Three touches, copy-paste scripts, and what to do when one comes in.</p>
+
+  <div class="linkcard">
+    <div class="lbl cond">Miltum review link</div>
+    <div class="linkrow">
+      <span class="url" id="reviewUrl">https://app.trusthero.io/dl?id=48782250</span>
+      <div class="btns">
+        <button class="copy cond" type="button" data-text="https://app.trusthero.io/dl?id=48782250">Copy</button>
+        <a class="ghost cond" href="https://app.trusthero.io/dl?id=48782250" target="_blank" rel="noopener">Test it</a>
+      </div>
+    </div>
+    <p>This link goes in every review text and email. It's already in the scripts below.</p>
+  </div>
+
+  <ol class="flow" aria-label="Review sequence at a glance">
+    <li><span class="dot">01</span><b>Job done</b><small>Check and tag</small></li>
+    <li><span class="dot">02</span><b>Day 0</b><small>Review request SMS</small></li>
+    <li><span class="dot">03</span><b>Day 3</b><small>Reminder email</small></li>
+    <li><span class="dot">04</span><b>Day 7</b><small>Final nudge SMS</small></li>
+    <li><span class="dot">05</span><b>Review in</b><small>Reply and track</small></li>
+  </ol>
+</section>
+
+<main class="wrap">
+  <section class="rules">
+    <h2>The rules</h2>
+    <ol>
+      <li><span><b>Ask every client, every job.</b> Once it's finished. If anything is still open, fix it first, then ask.</span></li>
+      <li><span><b>Never offer anything for a review.</b> No discounts, gifts or prize draws. It breaks Google's review rules.</span></li>
+      <li><span><b>Never write a review for a client,</b> or ask friends and family to post one.</span></li>
+      <li><span><b>Three touches max.</b> Day 0, Day 3, Day 7. Then stop.</span></li>
+      <li><span><b>Send from GHL between 8am and 6pm,</b> so everything is logged against the client.</span></li>
+    </ol>
+  </section>
+
+  <section class="group">
+    <div class="group-head"><span class="gnum cond">01</span><h2>The sequence</h2></div>
+    <p class="group-sub">Swap out anything in orange brackets, like <span class="tok">[Name]</span> and <span class="tok">[job]</span>, before you send.</p>
+
+    <article class="item">
+      <div class="rail"><div class="num">01</div><div class="time cond"><span>Job done</span><span>Before you ask</span></div></div>
+      <div class="card">
+        <div class="card-head"><span class="tag plain cond">Check</span><h3>Job complete</h3></div>
+        <p class="when">Run through this before the first message goes out.</p>
+        <ul class="checks">
+          <li><span>The job is finished and the client has seen it</span></li>
+          <li><span>No open issues, defects or questions. If there are, sort them first</span></li>
+          <li><span>Mark the job complete in GHL</span></li>
+          <li><span>Tag the client <code>review-requested</code> once the Day 0 text goes out</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="item">
+      <div class="rail"><div class="num">02</div><div class="time cond"><span>Day 0</span><span>Same day</span></div></div>
+      <div class="card">
+        <div class="card-head"><span class="tag cond">SMS</span><h3>Review request</h3></div>
+        <p class="when">Send the day the job is finished, while they're still excited about it.</p>
+        <div class="msg">
+          <div class="bubble" data-sms>Hey <span class="tok">[Name]</span>, it's Kate from Miltum. Hope you're loving your new <span class="tok">[job]</span>! Would you mind leaving us a quick review? It only takes a minute and really helps a local business like ours. <span class="lnk">https://app.trusthero.io/dl?id=48782250</span></div>
+          <div class="msg-foot"><span class="count cond"></span><button class="copy cond" type="button">Copy</button></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="item">
+      <div class="rail"><div class="num">03</div><div class="time cond"><span>Day 3</span><span>No review yet</span></div></div>
+      <div class="card">
+        <div class="card-head"><span class="tag cond">Email</span><h3>Reminder email</h3></div>
+        <p class="when">Only if no review has come in. Email gives them a second way to find the link.</p>
+        <div class="msg">
+          <div class="msg-label cond"><span>Subject line</span></div>
+          <div class="bubble subject">How did we go, <span class="tok">[Name]</span>?</div>
+          <div class="msg-foot"><span></span><button class="copy cond" type="button">Copy</button></div>
+        </div>
+        <div class="msg">
+          <div class="msg-label cond"><span>Email</span></div>
+<div class="bubble mail">Hi <span class="tok">[Name]</span>,
+
+Thanks again for choosing Miltum for your <span class="tok">[job]</span>. It was great working with you.
+
+If you've got a spare minute, we'd really appreciate a quick review. It helps other locals find us, and the whole team reads every one.
+
+Leave a review here: <span class="lnk">https://app.trusthero.io/dl?id=48782250</span>
+
+Thanks so much,
+Kate
+Miltum</div>
+          <div class="msg-foot"><span></span><button class="copy cond" type="button">Copy</button></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="item">
+      <div class="rail"><div class="num">04</div><div class="time cond"><span>Day 7</span><span>No review yet</span></div></div>
+      <div class="card">
+        <div class="card-head"><span class="tag cond">SMS</span><h3>Final nudge</h3></div>
+        <p class="when">One last gentle reminder. No pressure, and no chasing after this.</p>
+        <div class="msg">
+          <div class="bubble" data-sms>Hey <span class="tok">[Name]</span>, hope you're enjoying the new <span class="tok">[job]</span>! No rush at all, but if you get a spare minute we'd love a review. <span class="lnk">https://app.trusthero.io/dl?id=48782250</span></div>
+          <div class="msg-foot"><span class="count cond"></span><button class="copy cond" type="button">Copy</button></div>
+        </div>
+      </div>
+    </article>
+
+    <div class="stop"><div class="big">Stop here.</div><p>Three touches is the max. No review by Day 7? Leave it and move on. More chasing does more harm than good.</p></div>
+  </section>
+
+  <section class="group">
+    <div class="group-head"><span class="gnum cond">02</span><h2>When a review comes in</h2></div>
+    <p class="group-sub">Tag the client <code class="gtag">review-left</code> in GHL so no more nudges go out, then thank them and reply.</p>
+
+    <article class="item">
+      <div class="rail"><div class="num">05</div><div class="time cond"><span>Review in</span><span>Within 2 days</span></div></div>
+      <div class="card">
+        <div class="card-head"><span class="tag cond">Reply</span><h3>Thank them and reply</h3></div>
+        <p class="when">Reply to every review within 2 business days. <b>Anything 3 stars or under goes to the boss the same day,</b> before you reply.</p>
+        <div class="msg">
+          <div class="msg-label cond"><span>Thank-you text</span><span class="opt">Optional</span></div>
+          <div class="bubble" data-sms>Thanks so much for the review <span class="tok">[Name]</span>, really appreciate it! If you ever need anything down the track, just let us know.</div>
+          <div class="msg-foot"><span class="count cond"></span><button class="copy cond" type="button">Copy</button></div>
+        </div>
+        <div class="msg">
+          <div class="msg-label cond"><span>Public reply</span><span class="sub">4 or 5 stars</span></div>
+          <div class="bubble mail">Thanks so much <span class="tok">[Name]</span>! It was a pleasure working on your <span class="tok">[job]</span>. Enjoy it, and thanks for trusting the Miltum team.</div>
+          <div class="msg-foot"><span></span><button class="copy cond" type="button">Copy</button></div>
+        </div>
+        <div class="msg">
+          <div class="msg-label cond"><span>Public reply</span><span class="sub">3 stars or under, once the boss has seen it</span></div>
+          <div class="bubble mail">Hi <span class="tok">[Name]</span>, thanks for taking the time to share this. We're sorry the job didn't meet your expectations. We'd like to make it right, so please give us a call on <span class="tok">[phone]</span> and we'll sort it out.</div>
+          <div class="msg-foot"><span></span><button class="copy cond" type="button">Copy</button></div>
+        </div>
+      </div>
+    </article>
+
+    <div class="note"><b>Track it.</b> Every Friday, add the week's new reviews to the Miltum Growth Tracker.</div>
+  </section>
+
+  <section class="group">
+    <div class="group-head"><span class="gnum cond">03</span><h2>Past clients</h2></div>
+    <p class="group-sub">A one-off catch-up for happy clients from the last 12 months who were never asked.</p>
+
+    <article class="item">
+      <div class="rail"><div class="num">06</div><div class="time cond"><span>One-off</span><span>Last 12 months</span></div></div>
+      <div class="card">
+        <div class="card-head"><span class="tag cond">SMS</span><h3>Past client request</h3></div>
+        <p class="when">Send it once, in batches of about 10 a day, so replies stay manageable. Then run the Day 3 and Day 7 steps as normal.</p>
+        <div class="msg">
+          <div class="bubble" data-sms>Hey <span class="tok">[Name]</span>, it's Kate from Miltum. We did your <span class="tok">[job]</span> a while back and hope it's still looking great! Would you mind leaving us a quick review? It only takes a minute. <span class="lnk">https://app.trusthero.io/dl?id=48782250</span></div>
+          <div class="msg-foot"><span class="count cond"></span><button class="copy cond" type="button">Copy</button></div>
+        </div>
+      </div>
+    </article>
+  </section>
+</main>
+
+<footer class="wrap foot">
+  <div class="foot-big">Every job. Every client.<br><span>Every review.</span></div>
+  <div class="foot-meta cond">
+    <span>3 touches max</span><span>Day 0 · Day 3 · Day 7</span><span>Reply within 2 business days</span>
+  </div>
+</footer>
+
+<div class="sr" aria-live="polite" id="live"></div>
+
+<script>
+(function(){
+  /* typical values, used only for the SMS character estimate */
+  var SAMPLE = {'[Name]':'Michael', '[job]':'driveway', '[phone]':'0400 000 000'};
+
+  var GSM = "@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !\"#¤%&'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà";
+  var GSM_EXT = "^{}\\[~]|€\f";
+  function estimate(s){
+    var filled = s.replace(/\[(Name|job|phone)\]/g, function(m){ return SAMPLE[m]; });
+    var uni = false, len = 0;
+    for (var i = 0; i < filled.length; i++){
+      var c = filled[i];
+      if (GSM.indexOf(c) > -1) len += 1;
+      else if (GSM_EXT.indexOf(c) > -1) len += 2;
+      else { uni = true; break; }
+    }
+    if (uni) len = Array.from(filled).length;
+    var parts = len <= (uni ? 70 : 160) ? 1 : Math.ceil(len / (uni ? 67 : 153));
+    return {len:len, parts:parts, uni:uni};
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.bubble[data-sms]'), function(b){
+    var e = estimate(b.textContent);
+    var c = b.parentNode.querySelector('.count');
+    if (c) { c.title = 'Estimated with a typical name and job'; c.innerHTML = '≈ <b>' + e.len + '</b> chars · <b>' + e.parts + '</b> SMS' + (e.uni ? ' · Unicode' : ''); }
+  });
+
+  function legacyCopy(s){
+    var ta = document.createElement('textarea');
+    ta.value = s; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.top = '0'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    var ok = false; try { ok = document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta); return ok;
+  }
+  function doCopy(s){
+    if (navigator.clipboard && window.isSecureContext){
+      return navigator.clipboard.writeText(s).then(function(){ return true; }, function(){ return legacyCopy(s); });
+    }
+    return Promise.resolve(legacyCopy(s));
+  }
+
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('button.copy'); if (!b) return;
+    var text = b.dataset.text;
+    if (!text) { var msg = b.closest('.msg'); text = msg ? msg.querySelector('.bubble').textContent : ''; }
+    doCopy(text).then(function(ok){
+      b.textContent = ok ? 'Copied' : 'Press Ctrl+C';
+      b.classList.toggle('done', ok);
+      document.getElementById('live').textContent = ok ? 'Copied to clipboard' : 'Copy failed';
+      setTimeout(function(){ b.textContent = 'Copy'; b.classList.remove('done'); }, 1600);
+    });
+  });
+})();
+</script>
+</body>
+</html>
